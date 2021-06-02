@@ -2,35 +2,25 @@ package ru.spectr.progressbarissue
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
-import com.hannesdorfmann.adapterdelegates4.AsyncListDifferDelegationAdapter
-import kotlinx.coroutines.launch
 import ru.spectr.progressbarissue.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
     lateinit var binding: ActivityMainBinding
 
-    private val adapter = AsyncListDifferDelegationAdapter(
-        DifferConfig.config,
-        trackAdapterDelegate(
-            onClick = {
-                onClick(it)
-            }
-        )
-    )
+    private val adapter = Adapter().apply { onClick = ::onClick }
 
     private fun onClick(item: Item) {
-        val newList = adapter.items.toMutableList()
-        val itemIndex = adapter.items.indexOfFirst { it.id == item.id }
+        val newList = adapter.currentList.toMutableList()
+        val itemIndex = adapter.currentList.indexOfFirst { it.number == item.number }
         if (item.isProgress) {
             newList[itemIndex] = item.copy(isProgress = false)
-            adapter.items = newList
+            adapter.submitList(newList)
         } else {
-            val list = newList.mapIndexed { index, item ->
-                if (index == itemIndex) item.copy(isProgress = true)
-                else item.copy(isProgress = false)
+            val list = newList.mapIndexed { index, item1 ->
+                if (index == itemIndex) item1.copy(isProgress = true)
+                else item1.copy(isProgress = false)
             }
-            adapter.items = list
+            adapter.submitList(list)
         }
     }
 
@@ -41,16 +31,9 @@ class MainActivity : AppCompatActivity() {
 
         with(binding) {
             recycler.adapter = adapter
-
-            adapter.items = getItems()
-        }
-
-        lifecycleScope.launch {
-
+            adapter.submitList(getItems())
         }
     }
 
-    private fun getItems(size: Int = 100): List<Item> {
-        return List(size) { Item(number = it) }
-    }
+    private fun getItems(size: Int = 100) = List(size) { Item(number = it) }
 }
